@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>KYNORA WORKS · Wall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+:root{
+  --paper:#F0ECE2;--paper-deep:#E5DFD1;--ink:#1F1B17;--vermilion:#E94627;--bg:#110F0D;--line:rgba(240,236,226,.14);
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;--f-body:"Geist",-apple-system,BlinkMacSystemFont,sans-serif;--f-mono:"Geist Mono",ui-monospace,Menlo,monospace;--f-serif:"Instrument Serif",Georgia,serif;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--paper);font-family:var(--f-body);-webkit-font-smoothing:antialiased}
+canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;outline:none}
+body.dragging canvas#gl{cursor:grabbing}
+body.over-link canvas#gl{cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* HUD */
+.hud{position:fixed;z-index:5;pointer-events:none}
+.hud a,.hud button{pointer-events:auto}
+.logo{top:max(22px,env(safe-area-inset-top));left:28px;display:flex;align-items:center;gap:10px;color:var(--paper);text-decoration:none;font:800 22px/1 var(--f-display);letter-spacing:-.01em;opacity:0;transform:translateY(-8px);transition:opacity .9s var(--ease) .5s,transform .9s var(--ease) .5s}
+.logo .bee{width:30px}
+.logo sup{font:600 9px/1 var(--f-mono);letter-spacing:.08em;margin-left:-4px;opacity:.75}
+.navr{top:max(20px,env(safe-area-inset-top));right:24px;display:flex;gap:8px;opacity:0;transform:translateY(-8px);transition:opacity .9s var(--ease) .6s,transform .9s var(--ease) .6s}
+.pill{appearance:none;border:1px solid var(--line);background:rgba(17,15,13,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--paper);font:500 14px/1 var(--f-body);height:40px;padding:0 15px;border-radius:999px;display:inline-flex;align-items:center;gap:7px;cursor:pointer;transition:background .3s,border-color .3s,color .3s}
+.pill:hover{background:rgba(240,236,226,.12);border-color:rgba(240,236,226,.3)}
+.pill:focus-visible{outline:2px solid var(--vermilion);outline-offset:2px}
+.pill small{font:400 10.5px/1 var(--f-mono);opacity:.55;letter-spacing:.04em}
+.pill .bars{display:inline-flex;gap:2px;align-items:flex-end;height:10px}
+.pill .bars i{width:2px;height:3px;background:currentColor;border-radius:1px;transition:height .3s}
+body.sound .pill .bars i{animation:eq 1s ease-in-out infinite}
+body.sound .pill .bars i:nth-child(2){animation-delay:-.3s}body.sound .pill .bars i:nth-child(3){animation-delay:-.6s}body.sound .pill .bars i:nth-child(4){animation-delay:-.15s}
+@keyframes eq{0%,100%{height:3px}50%{height:10px}}
+.pill.cta{background:var(--vermilion);border-color:var(--vermilion)}
+.pill.cta:hover{background:#ff5534}
+.hint{left:28px;bottom:max(22px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;font:500 11px/1 var(--f-mono);letter-spacing:.14em;color:rgba(240,236,226,.6);opacity:0;transition:opacity 1s var(--ease) .9s}
+.hint .dot{width:22px;height:22px;border-radius:50%;border:1px solid rgba(240,236,226,.35);display:grid;place-items:center}
+.hint .dot::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--vermilion);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(.5);opacity:.6}}
+.coords{right:28px;bottom:max(22px,env(safe-area-inset-bottom));font:500 11px/1 var(--f-mono);letter-spacing:.12em;color:rgba(240,236,226,.6);display:flex;gap:14px;opacity:0;transition:opacity 1s var(--ease) .9s;font-variant-numeric:tabular-nums}
+.coords b{color:var(--paper);font-weight:500}
+body.ready .logo,body.ready .navr{opacity:1;transform:none}
+body.ready .hint,body.ready .coords{opacity:1}
+
+/* case sheet */
+.sheet{position:fixed;inset:0;z-index:20;display:grid;grid-template-columns:1fr minmax(0,620px);pointer-events:none}
+.sheet .scrim{background:rgba(10,9,8,.5);opacity:0;transition:opacity .6s var(--ease);grid-column:1/-1;grid-row:1}
+.sheet .panel{grid-column:2;grid-row:1;background:var(--paper);color:var(--ink);transform:translateX(102%);transition:transform .8s var(--ease);overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column}
+.sheet.open{pointer-events:auto}
+.sheet.open .scrim{opacity:1}
+.sheet.open .panel{transform:none}
+.panel .ph{aspect-ratio:4/3;width:100%;object-fit:cover;display:block;background:#2a2420}
+.panel .in{padding:28px 32px 36px;display:flex;flex-direction:column;gap:18px;flex:1}
+.panel .meta{display:flex;justify-content:space-between;font:500 11px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:#8E867B}
+.panel .meta b{color:var(--vermilion);font-weight:500}
+.panel h2{margin:0;font:800 clamp(36px,4.4vw,58px)/.92 var(--f-display);font-stretch:88%;letter-spacing:-.02em;text-transform:uppercase}
+.panel h2 em{font:italic 400 1.08em/1 var(--f-serif);text-transform:none;color:var(--vermilion);letter-spacing:0}
+.panel p{margin:0;font-size:16px;line-height:1.55;color:#5B544B;max-width:36em}
+.panel .tags{display:flex;flex-wrap:wrap;gap:6px}
+.panel .tags span{font:500 11px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;border:1px solid rgba(31,27,23,.2);border-radius:99px;padding:7px 10px}
+.panel .row{margin-top:auto;display:flex;gap:10px;align-items:center;justify-content:space-between;padding-top:10px}
+.panel .close{appearance:none;border:0;background:var(--ink);color:var(--paper);font:500 14px/1 var(--f-body);height:44px;padding:0 18px;border-radius:99px;cursor:pointer}
+.panel .close:focus-visible,.panel a:focus-visible{outline:2px solid var(--vermilion);outline-offset:2px}
+.panel a.go{color:var(--ink);font:500 14px/1 var(--f-body);text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:3px}
+.panel kbd{font:500 10px/1 var(--f-mono);border:1px solid rgba(31,27,23,.25);border-radius:4px;padding:3px 5px;margin-left:6px;opacity:.6}
+
+.toast{position:fixed;left:50%;bottom:70px;z-index:30;transform:translate(-50%,20px);opacity:0;background:var(--paper);color:var(--ink);font:500 13px/1 var(--f-body);padding:12px 16px;border-radius:99px;transition:opacity .4s,transform .5s var(--ease);pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.nogl{position:fixed;inset:0;display:none;place-items:center;text-align:center;padding:24px;font-size:16px}
+body.nogl-on .nogl{display:grid}
+
+@media (max-width:760px){
+  .logo{left:16px;font-size:19px}.logo .bee{width:26px}
+  .navr{right:12px;gap:5px}
+  .navr .pill{height:34px;padding:0 11px;font-size:12.5px}
+  .navr .hide-s{display:none}
+  .hint{left:16px;font-size:9.5px;letter-spacing:.1em}
+  .hint .hide-s{display:none}
+  .coords{right:16px;font-size:9.5px;gap:8px}
+  .coords .hide-s{display:none}
+  .sheet{grid-template-columns:1fr}
+  .sheet .panel{grid-column:1;margin-top:12vh;border-radius:18px 18px 0 0;transform:translateY(102%)}
+  .panel .in{padding:22px 20px 28px}
+}
+@media (prefers-reduced-motion:reduce){.sheet .panel,.sheet .scrim{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="gl" tabindex="0" aria-label="A wall of KYNORA WORKS projects and services. Drag, scroll or use the arrow keys to move. Press Enter to open the card in the centre."></canvas>
+
+<a class="hud logo" href="#" id="home" aria-label="KYNORA WORKS, back to start">KYNORA<sup>WORKS</sup></a>
+<nav class="hud navr" aria-label="Primary">
+  <button class="pill hide-s" data-go="services">Services</button>
+  <button class="pill" data-go="work" id="workBtn">Work <small id="workN">01/04</small></button>
+  <button class="pill hide-s" data-go="contact">Contact</button>
+  <button class="pill" id="soundBtn" aria-pressed="false"><span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="hide-s">Sound</span></button>
+</nav>
+<div class="hud hint" aria-hidden="true"><span class="dot"></span><span>DRAG · <span class="hide-s">SCROLL · ARROWS · </span>↵ OPEN</span></div>
+<div class="hud coords" aria-hidden="true"><span class="hide-s">LDN <b id="clock">00:00:00</b> ·</span><span>X <b id="cx">+0000</b></span><span>Y <b id="cy">+0000</b></span></div>
+
+<div class="sheet" id="sheet" aria-hidden="true">
+  <div class="scrim" data-close></div>
+  <article class="panel" role="dialog" aria-modal="true" aria-labelledby="shT">
+    <img class="ph" id="shImg" alt="">
+    <div class="in">
+      <div class="meta"><span><b id="shN">01</b> · <span id="shK">Fintech app</span></span><span id="shY">2026</span></div>
+      <h2 id="shT"></h2>
+      <p id="shP"></p>
+      <div class="tags" id="shTags"></div>
+      <div class="row"><a class="go" id="shGo" href="mailto:hello@kynora.works">Start something like this ↗</a><button class="close" data-close>Close<kbd>Esc</kbd></button></div>
+    </div>
+  </article>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<div class="nogl">This page needs WebGL2 to draw the wall. Try a current Chrome, Safari or Firefox.</div>
+
+<!-- the same content as real text for screen readers and search -->
+<main class="sr">
+  <h1>KYNORA WORKS. We build the work and the world around it.</h1>
+  <p>KYNORA WORKS is a studio for software, marketing, design and culture.</p>
+  <h2>Services</h2><ul><li>Software: apps, platforms and internal tools</li><li>Marketing: launches, content and campaigns</li><li>Design: identity, product and motion</li><li>Culture: events, communities and moments</li></ul>
+  <h2>Work</h2><ul><li>Northfield, fintech app: number one in Finance nine days after launch</li><li>Okra Foods, launch: 4.2 million organic views in month one</li><li>Lumen Health, platform: bookings up 212 percent after the rebuild</li><li>Parallel, community: a supper club with a 9,000-person waitlist</li></ul>
+  <h2>Contact</h2><p><a href="mailto:hello@kynora.works">hello@kynora.works</a></p>
+</main>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const body = document.body;
+
+  /* ---------- bee mark ---------- */
+  const BEE = (stripe, color) => `<svg viewBox="440 900 2120 1360" style="width:100%;height:auto" aria-hidden="true"><g fill="${color}"><path d="M1677.194,1062.678s-48.145,94.002-85.977,160.493c-37.825,67.631-91.707,65.336-91.707,65.336,0,0-52.728,2.295-91.707-65.336-37.832-66.491-84.829-160.493-84.829-160.493,0,0-37.832-108.905,98.585-132.975h155.903c136.417,24.069,99.733,132.975,99.733,132.975Z"/><path d="M1601.893,1402.726l510.68,195.106c24.508,9.363,116.123,89.268,111.118,110.333-6.921,29.125-204.136,99.167-239.688,94.574-45.711-5.906-88.881-29.132-119.174-67.447l-262.935-332.566Z"/><path d="M1601.893,1335.25l71.693-120.893,722.151-248.482c101.791-35.025,188.896,80.722,127.058,168.836l-181.273,258.299c-37.615,53.598-103.668,79.459-167.675,65.649l-571.954-123.409Z"/><path d="M1398.107,1402.726l-510.68,195.106c-24.508,9.363-116.123,89.268-111.118,110.333,6.921,29.125,204.136,99.167,239.688,94.574,45.711-5.906,88.881-29.132,119.174-67.447l262.935-332.566Z"/><path d="M1398.107,1335.25l-71.693-120.893-722.151-248.482c-101.791-35.025-188.896,80.722-127.058,168.836l181.273,258.299c37.615,53.598,103.668,79.459,167.675,65.649l571.954-123.409Z"/><path d="M1693.245,1702.57h-387.47s77.952-221.246,193.735-221.246,193.735,221.246,193.735,221.246Z"/><path d="M1693.655,2013.808h-387.47s77.952,221.246,193.735,221.246,193.735-221.246,193.735-221.246Z"/></g><path fill="${stripe}" d="M1290.291,1790.322h418.728c4.427,16.559,8.746,39.33,8.746,66.569,0,17.14-1.71,40.254-8.746,66.569h-418.728c-4.715-17.067-9.401-41.068-9.013-69.926.345-25.694,4.605-47.26,9.013-63.211Z"/></svg>`;
+  $$('[data-bee]').forEach(el => { el.innerHTML = BEE(el.dataset.stripe || '#E94627', el.dataset.color || '#1F1B17'); });
+  const BEE_PATHS = [...new DOMParser().parseFromString(BEE('#E94627', '#000'), 'image/svg+xml').querySelectorAll('path')].map(p => [new Path2D(p.getAttribute('d')), p.getAttribute('fill') || p.parentNode.getAttribute('fill')]);
+  const drawBee = (ctx, x, y, w, color, stripe) => {
+    const s = w / 2120; ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.translate(-440, -900);
+    BEE_PATHS.forEach(([p, f], i) => { ctx.fillStyle = i === BEE_PATHS.length - 1 ? stripe : color; ctx.fill(p); });
+    ctx.restore();
+  };
+
+  /* ---------- content ---------- */
+  const C = { paper: '#F0ECE2', paperD: '#E5DFD1', ink: '#1F1B17', soft: '#5B544B', faint: '#8E867B', verm: '#E94627', night: '#1B1815', night2: '#241F1B', amber: '#F4AE4E', blush: '#F1CDB8' };
+  const F = { disp: 'Archivo', body: 'Geist', mono: '"Geist Mono"', serif: '"Instrument Serif"' };
+  const CASES = {
+    north: { n: '01', name: 'Northfield', kind: 'Fintech app', year: '2026', img: 'assets/northfield.jpg', metric: ['#1 in Finance,', '9 days after launch'],
+      t: 'Number one in Finance, <em>nine days</em> in.', p: 'A banking app for people who hate banking apps. We built the product, the brand and the launch at the same time, so the story was ready the day the app was.', tags: ['Product', 'iOS + Android', 'Brand', 'Launch'] },
+    okra: { n: '02', name: 'Okra Foods', kind: 'Launch', year: '2025', img: 'assets/okra.jpg', metric: ['4.2M organic', 'views, month one'],
+      t: '4.2M views, <em>zero</em> paid.', p: 'A produce brand that sounded like every other produce brand. New identity, a content engine and a launch built for sharing, not for ads.', tags: ['Identity', 'Content', 'Social'] },
+    lumen: { n: '03', name: 'Lumen Health', kind: 'Platform', year: '2025', img: 'assets/lumen.jpg', metric: ['Bookings up 212%', 'after the rebuild'],
+      t: 'Bookings up <em>212%</em>.', p: 'A clinic platform rebuilt from the booking flow out. Calmer screens, fewer steps, and a design system the in-house team can keep growing.', tags: ['Platform', 'Design system', 'Web'] },
+    par: { n: '04', name: 'Parallel', kind: 'Community', year: '2026', img: 'assets/parallel.jpg', metric: ['A supper club,', '9,000 on the waitlist'],
+      t: 'A supper club with a <em>9,000-person</em> waitlist.', p: 'We turned a brand into a place to be. Monthly dinners, a members app and the content that made everyone else want a seat.', tags: ['Culture', 'Events', 'App'] },
+  };
+  const IMG_SRC = { north: 'assets/northfield.jpg', okra: 'assets/okra.jpg', lumen: 'assets/lumen.jpg', par: 'assets/parallel.jpg', hero: 'assets/hero.jpg' };
+  const IMGS = {};
+
+  /* ---------- canvas drawing helpers ---------- */
+  const rr = (ctx, x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
+  const font = (ctx, f) => { ctx.font = f; };
+  const wrap = (ctx, text, x, y, maxW, lh) => {
+    const words = text.split(' '); let line = '';
+    for (const w of words) {
+      const t = line ? line + ' ' + w : w;
+      if (ctx.measureText(t).width > maxW && line) { ctx.fillText(line, x, y); y += lh; line = w; } else line = t;
+    }
+    if (line) { ctx.fillText(line, x, y); y += lh; }
+    return y;
+  };
+  // a line made of runs: [[text, font, color], ...]
+  const runs = (ctx, list, x, y) => { list.forEach(([t, f, c]) => { ctx.font = f; ctx.fillStyle = c; ctx.fillText(t, x, y); x += ctx.measureText(t).width; }); return x; };
+  const cover = (ctx, img, x, y, w, h, fx = .5, fy = .5) => {
+    if (!img) { ctx.fillStyle = '#2a2420'; ctx.fillRect(x, y, w, h); return; }
+    const s = Math.max(w / img.naturalWidth, h / img.naturalHeight), iw = img.naturalWidth * s, ih = img.naturalHeight * s;
+    ctx.drawImage(img, x + (w - iw) * fx, y + (h - ih) * fy, iw, ih);
+  };
+  const mono = (ctx, t, x, y, c = C.faint, size = 11, align = 'left') => { ctx.font = `500 ${size}px ${F.mono}`; ctx.fillStyle = c; ctx.textAlign = align; ctx.letterSpacing = '1.5px'; ctx.fillText(t.toUpperCase(), x, y); ctx.letterSpacing = '0px'; ctx.textAlign = 'left'; };
+  const grainTile = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const d = g.createImageData(128, 128);
+    for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 18; }
+    g.putImageData(d, 0, 0); return c;
+  })();
+  const grain = (ctx, w, h) => { ctx.save(); ctx.fillStyle = ctx.createPattern(grainTile, 'repeat'); ctx.fillRect(0, 0, w, h); ctx.restore(); };
+
+  /* card kinds: each draws into a w×h box (CSS px) */
+  const CAP = 58; // caption strip under photo cards
+  const K = {
+    photo(ctx, w, h, o) {
+      const c = CASES[o.c], ih = h - CAP;
+      ctx.save(); rr(ctx, 0, 0, w, ih, 12); ctx.clip();
+      cover(ctx, IMGS[o.c], 0, 0, w, ih, o.fx ?? .5, o.fy ?? .5);
+      const g = ctx.createLinearGradient(0, ih * .45, 0, ih); g.addColorStop(0, 'rgba(15,12,10,0)'); g.addColorStop(1, 'rgba(15,12,10,.72)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, ih);
+      const big = w > 500 ? 40 : 25;
+      ctx.font = `800 ${big}px ${F.disp}`; ctx.fillStyle = C.paper; ctx.textBaseline = 'alphabetic';
+      ctx.fillText(c.metric[0].toUpperCase(), 24, ih - 24 - big * .92); ctx.fillText(c.metric[1].toUpperCase(), 24, ih - 24);
+      mono(ctx, c.name + ' · ' + c.kind, 24, 34, 'rgba(240,236,226,.85)', 10.5);
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(240,236,226,.08)'; ctx.lineWidth = 1; rr(ctx, .5, .5, w - 1, ih - 1, 12); ctx.stroke();
+      mono(ctx, c.n, 0, ih + 36, C.verm, 12);
+      ctx.font = `600 22px ${F.body}`; ctx.fillStyle = C.paper; ctx.fillText(c.name, 38, ih + 37);
+      mono(ctx, c.year + '  ↗', w, ih + 36, C.faint, 11, 'right');
+    },
+    brand(ctx, w, h) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.paper; ctx.fill(); grain(ctx, w, h);
+      mono(ctx, 'London studio', 26, 42, C.ink, 12); mono(ctx, '51.5° N   0.1° W', w - 26, 42, C.ink, 12, 'right');
+      // fit the wordmark + 'WORKS' tag to the card width
+      ctx.font = `800 100px ${F.disp}`; ctx.letterSpacing = '-3px'; const unit = ctx.measureText('KYNORA').width / 100;
+      const avail = w - 52 - 70; const fs = Math.min(h * .28, avail / unit);
+      const x0 = 26, base = h * .5 + fs * .36;
+      ctx.font = `800 ${fs}px ${F.disp}`; ctx.fillStyle = C.ink; ctx.fillText('KYNORA', x0, base); const ww = ctx.measureText('KYNORA').width; ctx.letterSpacing = '0px';
+      mono(ctx, 'Works', x0 + ww + 8, base - fs * .58, C.ink, 13);
+      runs(ctx, [['We build the work and', `600 30px ${F.body}`, C.ink]], 26, h - 66);
+      runs(ctx, [['the world', `italic 400 36px ${F.serif}`, C.ink], [' around it.', `600 30px ${F.body}`, C.ink]], 26, h - 30);
+      mono(ctx, 'Drag · Fling · Tap', w - 26, h - 32, C.faint, 11, 'right');
+    },
+    about(ctx, w, h) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.night; ctx.fill(); ctx.strokeStyle = 'rgba(240,236,226,.07)'; ctx.stroke();
+      mono(ctx, 'About us', 24, 40, C.faint, 11);
+      ctx.font = `600 27px ${F.body}`; ctx.fillStyle = C.paper; let y = wrap(ctx, 'We build software, launch it loudly and give it a culture people want in on.', 24, 92, w - 48, 33);
+      ctx.font = `italic 400 31px ${F.serif}`; ctx.fillStyle = C.verm; wrap(ctx, 'Then we stay for what comes next.', 24, y + 10, w - 48, 32);
+      mono(ctx, 'Software · Marketing · Design · Culture', 24, h - 30, C.faint, 9.5);
+    },
+    howhelp(ctx, w, h) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.verm; ctx.fill(); grain(ctx, w, h);
+      mono(ctx, 'Services · 04', 24, 40, C.ink, 11);
+      ctx.font = `800 46px ${F.disp}`; ctx.fillStyle = C.ink; ctx.letterSpacing = '-1.5px'; ctx.fillText('What we do.', 22, h - 30); ctx.letterSpacing = '0px';
+    },
+    service(ctx, w, h, o) {
+      const dark = o.dark; rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = dark ? C.night : C.paperD; ctx.fill(); if (!dark) grain(ctx, w, h);
+      if (dark) { ctx.strokeStyle = 'rgba(240,236,226,.07)'; ctx.stroke(); }
+      const fg = dark ? C.paper : C.ink;
+      mono(ctx, o.n + ' / 04', 24, 42, dark ? C.faint : C.soft, 11);
+      ctx.font = `800 50px ${F.disp}`; ctx.fillStyle = fg; ctx.letterSpacing = '-1.5px'; ctx.fillText(o.t, 22, 112); ctx.letterSpacing = '0px';
+      o.items.forEach((it, i) => { ctx.fillStyle = C.verm; ctx.fillRect(24, 152 + i * 38, 16, 2); ctx.font = `500 19px ${F.body}`; ctx.fillStyle = fg; ctx.fillText(it, 52, 159 + i * 38); });
+    },
+    arrows(ctx, w, h) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.paper; ctx.fill(); grain(ctx, w, h);
+      const cx = w / 2, cy = h / 2 - 6, s = 54;
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (let a = 0; a < 8; a++) {
+        const ang = a * Math.PI / 4, dx = Math.cos(ang), dy = Math.sin(ang), len = a % 2 ? s * 1.25 : s, x1 = cx + dx * len * .55, y1 = cy + dy * len * .55, x2 = cx + dx * len, y2 = cy + dy * len;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        const hx = -dx * 10, hy = -dy * 10; ctx.beginPath(); ctx.moveTo(x2 + hx - dy * 8, y2 + hy + dx * 8); ctx.lineTo(x2, y2); ctx.lineTo(x2 + hx + dy * 8, y2 + hy - dx * 8); ctx.stroke();
+      }
+      ctx.fillStyle = C.verm; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, 7); ctx.fill();
+      mono(ctx, 'Drag anywhere', w / 2, h - 26, C.soft, 10.5, 'center');
+    },
+    serif(ctx, w, h, o) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.night2; ctx.fill(); ctx.strokeStyle = 'rgba(240,236,226,.07)'; ctx.stroke();
+      ctx.font = `italic 400 ${o.size || 64}px ${F.serif}`; ctx.fillStyle = C.paper; ctx.textAlign = 'center'; ctx.fillText(o.t, w / 2, h / 2 + (o.size || 64) * .3); ctx.textAlign = 'left';
+      mono(ctx, o.k, 22, h - 22, C.faint, 10);
+    },
+    statement(ctx, w, h) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.night; ctx.fill(); ctx.strokeStyle = 'rgba(240,236,226,.07)'; ctx.stroke();
+      mono(ctx, 'Kynora / Manifesto', 28, 42, C.faint, 11); mono(ctx, '01', w - 28, 42, C.verm, 11, 'right');
+      const sz = Math.min(92, w * .13); ctx.font = `800 ${sz}px ${F.disp}`; ctx.fillStyle = C.paper; ctx.letterSpacing = '-3px';
+      ['BUILT TO BE', 'TALKED'].forEach((l, i) => ctx.fillText(l, 26, h * .42 + i * sz * .9));
+      ctx.fillStyle = C.verm; ctx.fillText('ABOUT.', 26, h * .42 + 2 * sz * .9); ctx.letterSpacing = '0px';
+      ctx.font = `400 16px ${F.body}`; ctx.fillStyle = 'rgba(240,236,226,.7)'; wrap(ctx, 'Technical in substance. Creative in expression. Cultural in spirit.', 28, h - 36, w - 56, 22);
+    },
+    quote(ctx, w, h) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.paper; ctx.fill(); grain(ctx, w, h);
+      ctx.font = `italic 400 120px ${F.serif}`; ctx.fillStyle = C.verm; ctx.fillText('“', 22, 108);
+      ctx.font = `500 ${w > 500 ? 30 : 23}px ${F.body}`; ctx.fillStyle = C.ink; const y = wrap(ctx, 'They didn’t just ship our app. They gave people a reason to talk about it.', 26, 140, w - 52, w > 500 ? 38 : 30);
+      mono(ctx, 'Founder, Northfield', 26, h - 30, C.soft, 10.5);
+    },
+    contact(ctx, w, h) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.verm; ctx.fill(); grain(ctx, w, h);
+      mono(ctx, 'Contact', 26, 42, C.ink, 11); mono(ctx, 'Reply in 1 day', w - 26, 42, C.ink, 11, 'right');
+      const sz = Math.min(70, w * .1); ctx.font = `800 ${sz}px ${F.disp}`; ctx.fillStyle = C.ink; ctx.letterSpacing = '-2px';
+      ['GOT SOMETHING', 'WORTH BUILDING?'].forEach((l, i) => ctx.fillText(l, 24, 120 + i * sz * .92)); ctx.letterSpacing = '0px';
+      ctx.fillStyle = C.ink; rr(ctx, 26, h - 86, 230, 52, 26); ctx.fill();
+      ctx.font = `500 17px ${F.body}`; ctx.fillStyle = C.paper; ctx.fillText('Book an intro call  →', 48, h - 54);
+      ctx.font = `500 17px ${F.body}`; ctx.fillStyle = C.ink; ctx.textAlign = 'right'; ctx.fillText('hello@kynora.works', w - 26, h - 54); ctx.textAlign = 'left';
+    },
+    clients(ctx, w, h) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.night; ctx.fill(); ctx.strokeStyle = 'rgba(240,236,226,.07)'; ctx.stroke();
+      mono(ctx, 'In good company', 26, 42, C.faint, 11); mono(ctx, '12 / 40+', w - 26, 42, C.faint, 11, 'right');
+      const names = ['Northfield', 'Okra Foods', 'Lumen Health', 'Parallel', 'Halcyon', 'Fern & Co', 'Atlas Run', 'Saltwater', 'Kiln', 'Monarch', 'Field Notes', 'Orbit'];
+      const cols = w > 500 ? 3 : 2, cw = (w - 52) / cols, rh = (h - 100) / Math.ceil(names.length / cols);
+      names.forEach((n, i) => { const x = 26 + (i % cols) * cw, y = 78 + Math.floor(i / cols) * rh; ctx.font = `${i % 3 === 1 ? 'italic 400 25px ' + F.serif : '700 19px ' + F.disp}`; ctx.fillStyle = i === 3 ? C.verm : C.paper; ctx.fillText(i % 3 === 0 ? n.toUpperCase() : n, x, y + rh * .6); });
+    },
+    archive(ctx, w, h) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.paperD; ctx.fill(); grain(ctx, w, h);
+      mono(ctx, 'Archive', 24, 42, C.soft, 11);
+      ctx.font = `800 96px ${F.disp}`; ctx.fillStyle = C.ink; ctx.letterSpacing = '-4px'; ctx.fillText('40+', 20, h * .55); ctx.letterSpacing = '0px';
+      ctx.font = `600 22px ${F.body}`; ctx.fillText('See all work  ↗', 24, h - 34);
+    },
+    clock(ctx, w, h) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.night2; ctx.fill(); ctx.strokeStyle = 'rgba(240,236,226,.07)'; ctx.stroke();
+      mono(ctx, 'Studio', 24, 42, C.faint, 11);
+      const cx = w / 2, cy = h / 2 + 4, r = Math.min(w, h) * .3;
+      ctx.strokeStyle = 'rgba(240,236,226,.25)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.stroke();
+      for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r * .86, cy + Math.sin(a) * r * .86); ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); ctx.stroke(); }
+      ctx.lineCap = 'round'; ctx.strokeStyle = C.paper; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + r * .45, cy - r * .3); ctx.stroke();
+      ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx - r * .2, cy - r * .78); ctx.stroke();
+      ctx.fillStyle = C.verm; ctx.beginPath(); ctx.arc(cx, cy, 5, 0, 7); ctx.fill();
+      mono(ctx, 'London · open 9–6', w / 2, h - 26, C.faint, 10, 'center');
+    },
+    beeCard(ctx, w, h) {
+      rr(ctx, 0, 0, w, h, 12); ctx.fillStyle = C.verm; ctx.fill(); grain(ctx, w, h);
+      mono(ctx, 'Kynora Works', 22, 40, C.ink, 10); mono(ctx, 'Est. 2020', w - 22, 40, C.ink, 10, 'right');
+      ctx.font = `800 ${w * .42}px ${F.disp}`; ctx.fillStyle = C.ink; ctx.letterSpacing = '-6px'; ctx.fillText('KW', 18, h * .62); ctx.letterSpacing = '0px';
+      ctx.font = `italic 400 ${w * .12}px ${F.serif}`; ctx.fillStyle = C.paper; ctx.fillText('since 2020.', 22, h - 28);
+    },
+    culture(ctx, w, h) {
+      const ih = h - CAP;
+      ctx.save(); rr(ctx, 0, 0, w, ih, 12); ctx.clip(); cover(ctx, IMGS.hero, 0, 0, w, ih, .5, .4);
+      ctx.fillStyle = 'rgba(15,12,10,.25)'; ctx.fillRect(0, 0, w, ih);
+      ctx.font = `italic 400 ${w > 500 ? 64 : 44}px ${F.serif}`; ctx.fillStyle = C.paper; ctx.fillText('Studio nights.', 24, ih - 28);
+      ctx.restore();
+      mono(ctx, '05', 0, ih + 36, C.verm, 12); ctx.font = `600 22px ${F.body}`; ctx.fillStyle = C.paper; ctx.fillText('Culture', 38, ih + 37); mono(ctx, 'Ongoing', w, ih + 36, C.faint, 11, 'right');
+    },
+  };
+
+  /* ---------- the wall: one block of columns that repeats forever in both directions ---------- */
+  const GAP = 28, BH = 2480;
+  const COLS = [
+    { w: 340, cards: [{ k: 'photo', c: 'north', h: 520, fx: .45 }, { k: 'arrows', h: 320 }, { k: 'photo', c: 'okra', h: 500 }, { k: 'serif', t: 'Talked about.', k2: 1, h: 230, size: 52 }, { k: 'service', n: '04', t: 'Culture', items: ['Events', 'Communities', 'Moments'], h: 330, dark: true }] },
+    { w: 700, cards: [{ k: 'brand', h: 470, id: 'home' }, { k: 'photo', c: 'par', h: 560, fy: .55 }, { k: 'statement', h: 480 }, { k: 'photo', c: 'lumen', h: 560 }] },
+    { w: 340, cards: [{ k: 'about', h: 430 }, { k: 'howhelp', h: 190, id: 'services' }, { k: 'service', n: '01', t: 'Software', items: ['Apps', 'Platforms', 'Internal tools'], h: 330 }, { k: 'service', n: '02', t: 'Marketing', items: ['Launches', 'Content', 'Campaigns'], h: 330, dark: true }, { k: 'beeCard', h: 330 }] },
+    { w: 340, cards: [{ k: 'service', n: '03', t: 'Design', items: ['Identity', 'Product', 'Motion'], h: 330 }, { k: 'photo', c: 'lumen', h: 500, fx: .3 }, { k: 'clock', h: 330 }, { k: 'archive', h: 330 }, { k: 'photo', c: 'par', h: 500, fx: .7 }] },
+    { w: 700, cards: [{ k: 'contact', h: 460, id: 'contact' }, { k: 'photo', c: 'north', h: 560, fy: .4 }, { k: 'clients', h: 420 }, { k: 'culture', h: 560 }] },
+  ];
+  // the 'serif' card's label
+  COLS[0].cards[3].k2 = undefined; COLS[0].cards[3].kLabel = 'The goal';
+  const BW = COLS.reduce((a, c) => a + c.w + GAP, 0);
+  const CARDS = [];
+  {
+    let x = 0;
+    COLS.forEach((col, ci) => {
+      const total = col.cards.reduce((a, c) => a + c.h, 0) + GAP * col.cards.length;
+      const k = BH / total; let y = ci % 2 ? -140 : 0; // stagger columns
+      col.cards.forEach(c => { const h = Math.round(c.h * k); CARDS.push({ ...c, x, y, w: col.w, h }); y += h + Math.round(GAP * k); });
+      x += col.w + GAP;
+    });
+  }
+
+  /* ---------- WebGL ---------- */
+  const canvas = $('#gl');
+  const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, premultipliedAlpha: false, powerPreference: 'high-performance' });
+  if (!gl) { body.classList.add('nogl-on'); return; }
+
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  const prog = (vs, fs) => { const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)); return p; };
+
+  // pass 1: flat cards into an oversized framebuffer
+  const pCard = prog(`#version 300 es
+    layout(location=0) in vec2 a; uniform vec4 uRect; uniform vec2 uRes; out vec2 vUv;
+    void main(){ vUv = a; vec2 p = uRect.xy + a * uRect.zw; vec2 c = p / uRes * 2.0 - 1.0; gl_Position = vec4(c.x, -c.y, 0.0, 1.0); }`,
+  `#version 300 es
+    precision highp float; in vec2 vUv; uniform sampler2D uTex; uniform float uHi; out vec4 o;
+    void main(){ vec4 t = texture(uTex, vUv); t.rgb += uHi * 0.06 * t.a; o = t; }`);
+  // pass 2: lens distortion, chromatic fringe, vignette, grain
+  const pPost = prog(`#version 300 es
+    layout(location=0) in vec2 a; out vec2 vUv; void main(){ vUv = a; gl_Position = vec4(a * 2.0 - 1.0, 0.0, 1.0); }`,
+  `#version 300 es
+    precision highp float; in vec2 vUv; uniform sampler2D uTex; uniform float uK, uZoom, uOver, uAsp, uCA, uTime; uniform vec2 uBg; out vec4 o;
+    vec2 warp(vec2 uv, float k){ vec2 d = (uv - 0.5) * vec2(uAsp, 1.0); float r2 = dot(d, d); d *= (1.0 + k * r2) * uZoom; return d / vec2(uAsp, 1.0) / uOver + 0.5; }
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main(){
+      vec3 bg = vec3(0.067, 0.059, 0.051);
+      vec2 ur = warp(vUv, uK + uCA), ug = warp(vUv, uK), ub = warp(vUv, uK - uCA);
+      vec4 cr = texture(uTex, ur), cg = texture(uTex, ug), cb = texture(uTex, ub);
+      vec3 col = vec3(cr.r, cg.g, cb.b);
+      vec2 d = (vUv - 0.5) * vec2(uAsp, 1.0); float r2 = dot(d, d);
+      col *= 1.0 - smoothstep(0.18, 1.1, r2) * 0.55;
+      col += (hash(vUv * 900.0 + uTime) - 0.5) * 0.035;
+      o = vec4(col, 1.0);
+    }`);
+
+  const quad = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quad); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+  const vao = gl.createVertexArray(); gl.bindVertexArray(vao); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const U = (p, n) => gl.getUniformLocation(p, n);
+  const uc = { rect: U(pCard, 'uRect'), res: U(pCard, 'uRes'), tex: U(pCard, 'uTex'), hi: U(pCard, 'uHi') };
+  const up = { tex: U(pPost, 'uTex'), k: U(pPost, 'uK'), zoom: U(pPost, 'uZoom'), over: U(pPost, 'uOver'), asp: U(pPost, 'uAsp'), ca: U(pPost, 'uCA'), time: U(pPost, 'uTime') };
+
+  const OVER = 1.5;
+  let W = 0, H = 0, DPR = 1, S = 1, fbo = null, fboTex = null, FW = 0, FH = 0;
+  const resize = () => {
+    W = innerWidth; H = innerHeight; DPR = Math.min(devicePixelRatio || 1, W < 760 ? 2 : 1.6);
+    S = W < 760 ? .44 : W < 1100 ? .78 : 1;
+    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+    FW = Math.round(W * DPR * OVER); FH = Math.round(H * DPR * OVER);
+    if (fboTex) gl.deleteTexture(fboTex); if (fbo) gl.deleteFramebuffer(fbo);
+    fboTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, fboTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, FW, FH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    fbo = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fboTex, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  };
+
+  /* card textures, drawn at 2× for sharpness and mip-mapped for when the wall zooms out */
+  const TS = 2;
+  const maxAniso = gl.getExtension('EXT_texture_filter_anisotropic');
+  const makeTex = card => {
+    const cv = document.createElement('canvas'); cv.width = card.w * TS; cv.height = card.h * TS;
+    const ctx = cv.getContext('2d'); ctx.scale(TS, TS); ctx.textBaseline = 'alphabetic';
+    K[card.k](ctx, card.w, card.h, { ...card, k: card.kLabel || '' });
+    if (!card.tex) card.tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, card.tex);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    if (maxAniso) gl.texParameterf(gl.TEXTURE_2D, maxAniso.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+  };
+
+  /* ---------- camera ---------- */
+  const home = CARDS.find(c => c.id === 'home');
+  const centreOf = c => ({ x: c.x + c.w / 2, y: c.y + c.h / 2 });
+  let cam = centreOf(home), tgt = { ...cam };
+  cam = { x: cam.x - 900, y: cam.y - 1400 }; // intro glide
+  let k = reduce ? .05 : .85, zoom = reduce ? 1 : 1.3, speed = 0, hover = null, introT = 0;
+  const wrapNear = (v, period, ref) => v - Math.round((v - ref) / period) * period;
+
+  /* screen (CSS px) → world, inverting the same lens as the shader */
+  const toWorld = (sx, sy) => {
+    const asp = W / H; let dx = (sx / W - .5) * asp, dy = (sy / H - .5);
+    const r2 = dx * dx + dy * dy, f = (1 + k * r2) * zoom; dx *= f; dy *= f;
+    const fx = dx / asp, fy = dy; // in units of the visible screen
+    return { x: cam.x + fx * W / S, y: cam.y + fy * H / S };
+  };
+  const cardAt = (wx, wy) => {
+    const lx = ((wx % BW) + BW) % BW, ly = ((wy % BH) + BH) % BH;
+    for (const c of CARDS) for (const oy of [0, BH, -BH]) {
+      if (lx >= c.x && lx <= c.x + c.w && ly >= c.y + oy && ly <= c.y + oy + c.h) return { c, ox: wx - lx, oy: wy - ly + oy };
+    }
+    return null;
+  };
+  const centreCam = (c, ox, oy) => { tgt.x = ox + c.x + c.w / 2; tgt.y = oy + c.y + c.h / 2; };
+
+  /* ---------- input ---------- */
+  let down = null, moved = 0, lastMoves = [];
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const m = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? H : 1;
+    tgt.x += (e.shiftKey ? e.deltaY : e.deltaX) * m * 1.1 / S; tgt.y += (e.shiftKey ? 0 : e.deltaY) * m * 1.1 / S;
+  }, { passive: false });
+  canvas.addEventListener('pointerdown', e => {
+    canvas.setPointerCapture(e.pointerId); canvas.focus({ preventScroll: true });
+    down = { x: e.clientX, y: e.clientY, tx: tgt.x, ty: tgt.y }; moved = 0; lastMoves = [{ x: e.clientX, y: e.clientY, t: performance.now() }];
+    body.classList.add('dragging');
+  });
+  canvas.addEventListener('pointermove', e => {
+    mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true;
+    if (!down) return;
+    const dx = e.clientX - down.x, dy = e.clientY - down.y; moved = Math.max(moved, Math.hypot(dx, dy));
+    tgt.x = down.tx - dx / S * zoom; tgt.y = down.ty - dy / S * zoom;
+    cam.x = lerp(cam.x, tgt.x, .5); cam.y = lerp(cam.y, tgt.y, .5); // follow the finger closely
+    lastMoves.push({ x: e.clientX, y: e.clientY, t: performance.now() }); if (lastMoves.length > 6) lastMoves.shift();
+  });
+  const release = e => {
+    if (!down) return;
+    body.classList.remove('dragging');
+    if (moved < 6) {
+      const w = toWorld(e.clientX, e.clientY), hit = cardAt(w.x, w.y);
+      if (hit) activate(hit);
+    } else if (lastMoves.length > 1) {
+      const a = lastMoves[0], b = lastMoves[lastMoves.length - 1], dt = Math.max(16, b.t - a.t);
+      const vx = (b.x - a.x) / dt, vy = (b.y - a.y) / dt; // px per ms → fling
+      tgt.x -= vx * 260 / S; tgt.y -= vy * 260 / S;
+    }
+    down = null;
+  };
+  canvas.addEventListener('pointerup', release); canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener('pointerleave', () => { mouse.on = false; });
+  const mouse = { x: 0, y: 0, on: false };
+
+  addEventListener('keydown', e => {
+    if (sheet.classList.contains('open')) { if (e.key === 'Escape') closeSheet(); return; }
+    const step = 420;
+    if (e.key === 'ArrowDown') tgt.y += step; else if (e.key === 'ArrowUp') tgt.y -= step;
+    else if (e.key === 'ArrowRight') tgt.x += step; else if (e.key === 'ArrowLeft') tgt.x -= step;
+    else if (e.key === 'Enter' && (document.activeElement === canvas || document.activeElement === body)) {
+      const hit = cardAt(cam.x, cam.y); if (hit) openOrCentre(hit, true);
+    } else return;
+    e.preventDefault();
+  });
+
+  /* ---------- clicking cards ---------- */
+  const sheet = $('#sheet');
+  let lastFocus = null;
+  const openSheet = key => {
+    const c = CASES[key];
+    $('#shImg').src = c.img; $('#shImg').alt = c.name;
+    $('#shN').textContent = c.n; $('#shK').textContent = c.name + ' · ' + c.kind; $('#shY').textContent = c.year;
+    $('#shT').innerHTML = c.t; $('#shP').textContent = c.p;
+    $('#shTags').innerHTML = c.tags.map(t => `<span>${t}</span>`).join('');
+    lastFocus = document.activeElement;
+    sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
+    $('#workN').textContent = c.n + '/04'; workIdx = ['north', 'okra', 'lumen', 'par'].indexOf(key);
+    blip(660); setTimeout(() => $('.panel .close').focus({ preventScroll: true }), 50);
+  };
+  const closeSheet = () => { sheet.classList.remove('open'); sheet.setAttribute('aria-hidden', 'true'); (lastFocus || canvas).focus({ preventScroll: true }); };
+  $$('[data-close]').forEach(b => b.addEventListener('click', closeSheet));
+  const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1800); };
+  const openOrCentre = (hit, fromKey) => {
+    const { c } = hit;
+    if (c.k === 'photo') return openSheet(c.c);
+    if (c.k === 'contact') { navigator.clipboard && navigator.clipboard.writeText('hello@kynora.works').catch(() => {}); toast('hello@kynora.works copied'); blip(520); return; }
+    centreCam(c, hit.ox, hit.oy); blip(440);
+  };
+  const activate = hit => {
+    // a click on a card that is already near the centre opens it, otherwise the wall brings it to the centre first
+    const cc = { x: hit.ox + hit.c.x + hit.c.w / 2, y: hit.oy + hit.c.y + hit.c.h / 2 };
+    const near = Math.abs(cc.x - cam.x) < hit.c.w * .7 && Math.abs(cc.y - cam.y) < hit.c.h * .7;
+    if (hit.c.k === 'photo' || hit.c.k === 'contact' || near) openOrCentre(hit); else { centreCam(hit.c, hit.ox, hit.oy); blip(440); }
+  };
+
+  /* nav */
+  const goTo = id => {
+    const c = CARDS.find(c => c.id === id); if (!c) return;
+    const ox = Math.round((cam.x - c.x) / BW) * BW, oy = Math.round((cam.y - c.y) / BH) * BH;
+    centreCam(c, ox, oy);
+  };
+  let workIdx = -1;
+  const WORK_KEYS = ['north', 'okra', 'lumen', 'par'];
+  $$('[data-go]').forEach(b => b.addEventListener('click', () => {
+    const g = b.dataset.go;
+    if (g === 'work') {
+      workIdx = (workIdx + 1) % 4; const key = WORK_KEYS[workIdx];
+      $('#workN').textContent = String(workIdx + 1).padStart(2, '0') + '/04';
+      // nearest card of that case
+      let best = null, bd = Infinity;
+      CARDS.filter(c => c.c === key).forEach(c => { const ox = Math.round((cam.x - c.x - c.w / 2) / BW) * BW, oy = Math.round((cam.y - c.y - c.h / 2) / BH) * BH; const d = Math.hypot(ox + c.x - cam.x, oy + c.y - cam.y); if (d < bd) { bd = d; best = { c, ox, oy }; } });
+      centreCam(best.c, best.ox, best.oy);
+    } else goTo(g);
+    blip(440);
+  }));
+  $('#home').addEventListener('click', e => { e.preventDefault(); goTo('home'); });
+
+  /* sound: a soft tick as cards pass the centre */
+  let audio = null, soundOn = false;
+  const blip = (f = 500) => {
+    if (!soundOn) return;
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime;
+    o.type = 'sine'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * .5, t + .08);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.08, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + .12);
+    o.connect(g).connect(audio.destination); o.start(t); o.stop(t + .14);
+  };
+  $('#soundBtn').addEventListener('click', e => {
+    soundOn = !soundOn; body.classList.toggle('sound', soundOn); e.currentTarget.setAttribute('aria-pressed', soundOn);
+    if (soundOn) { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); blip(700); }
+  });
+
+  /* ---------- HUD ---------- */
+  const cx = $('#cx'), cy = $('#cy'), clock = $('#clock');
+  const fmt = v => (v < 0 ? '−' : '+') + String(Math.abs(Math.round(v / 10))).padStart(4, '0');
+  const tfmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  setInterval(() => { clock.textContent = tfmt.format(new Date()); }, 1000); clock.textContent = tfmt.format(new Date());
+
+  /* ---------- frame ---------- */
+  let lastCentre = null, t0 = performance.now(), prev = t0;
+  const frame = now => {
+    const dt = Math.min(50, now - prev) / 16.67; prev = now;
+    introT = clamp((now - t0) / 1900);
+    // camera eases to its target; while dragging it already follows closely
+    const ease = down ? .35 : reduce ? .3 : .085;
+    const px = cam.x, py = cam.y;
+    cam.x = lerp(cam.x, tgt.x, 1 - Math.pow(1 - ease, dt)); cam.y = lerp(cam.y, tgt.y, 1 - Math.pow(1 - ease, dt));
+    const v = Math.hypot(cam.x - px, cam.y - py) / dt * S; // screen px per frame
+    speed = lerp(speed, v, .12);
+    // the lens: always a slight curve, bending harder and pulling back the faster the wall moves
+    const s01 = clamp(speed / 70);
+    const io = 1 - Math.pow(1 - introT, 3);
+    const kT = reduce ? .05 : .1 + s01 * .34, zT = reduce ? 1 : 1 + s01 * .16;
+    k = lerp(k, introT < 1 ? lerp(.85, kT, io) : kT, introT < 1 ? .2 : .1);
+    zoom = lerp(zoom, introT < 1 ? lerp(1.3, zT, io) : zT, introT < 1 ? .2 : .1);
+
+    // hover highlight
+    let hovered = null;
+    if (mouse.on && !down) { const w = toWorld(mouse.x, mouse.y), h = cardAt(w.x, w.y); hovered = h && h.c; body.classList.toggle('over-link', !!(h && (h.c.k === 'photo' || h.c.k === 'contact'))); }
+    CARDS.forEach(c => { c.hi = lerp(c.hi || 0, c === hovered ? 1 : 0, .15); });
+
+    // centre tick for sound
+    const cc = cardAt(cam.x, cam.y); if (cc && cc.c !== lastCentre) { if (lastCentre && speed > 4) blip(380 + Math.random() * 120); lastCentre = cc.c; }
+
+    // pass 1
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); gl.viewport(0, 0, FW, FH);
+    gl.clearColor(.067, .059, .051, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.useProgram(pCard); gl.bindVertexArray(vao); gl.uniform2f(uc.res, FW, FH); gl.uniform1i(uc.tex, 0); gl.activeTexture(gl.TEXTURE0);
+    const sc = S * DPR, viewW = FW / sc, viewH = FH / sc, L = cam.x - viewW / 2, T = cam.y - viewH / 2;
+    for (const c of CARDS) {
+      if (!c.tex) continue;
+      const i0 = Math.floor((L - c.x - c.w) / BW) + 1, i1 = Math.floor((L + viewW - c.x) / BW);
+      const j0 = Math.floor((T - c.y - c.h) / BH) + 1, j1 = Math.floor((T + viewH - c.y) / BH);
+      gl.bindTexture(gl.TEXTURE_2D, c.tex); gl.uniform1f(uc.hi, c.hi);
+      const lift = c.hi * 6;
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+        const x = (c.x + i * BW - L) * sc, y = (c.y + j * BH - T) * sc;
+        gl.uniform4f(uc.rect, x - lift, y - lift, c.w * sc + lift * 2, c.h * sc + lift * 2);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      }
+    }
+    // pass 2
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, canvas.width, canvas.height); gl.disable(gl.BLEND);
+    gl.useProgram(pPost); gl.bindTexture(gl.TEXTURE_2D, fboTex);
+    gl.uniform1i(up.tex, 0); gl.uniform1f(up.k, k); gl.uniform1f(up.zoom, zoom); gl.uniform1f(up.over, OVER); gl.uniform1f(up.asp, W / H);
+    gl.uniform1f(up.ca, reduce ? 0 : .002 + s01 * .013); gl.uniform1f(up.time, (now % 10000) / 1000);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    cx.textContent = fmt(cam.x - centreOf(home).x); cy.textContent = fmt(cam.y - centreOf(home).y);
+    requestAnimationFrame(frame);
+  };
+
+  /* ---------- start: wait for fonts and photos, draw every card, then run ---------- */
+  resize(); addEventListener('resize', resize);
+  const loadImg = src => new Promise(r => { const i = new Image(); i.decoding = 'async'; i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+  const fontsReady = Promise.all([
+    `800 40px Archivo`, `600 20px Geist`, `500 20px Geist`, `400 20px Geist`, `500 12px "Geist Mono"`, `italic 400 40px "Instrument Serif"`, `700 20px Archivo`,
+  ].map(f => document.fonts.load(f).catch(() => {})));
+  Promise.all([fontsReady, ...Object.entries(IMG_SRC).map(([k, s]) => loadImg(s).then(i => { IMGS[k] = i; }))]).then(() => {
+    CARDS.forEach(makeTex);
+    t0 = performance.now(); body.classList.add('ready');
+    requestAnimationFrame(frame);
+  });
+  canvas.focus({ preventScroll: true });
+})();
+</script>
+</body>
+</html>
