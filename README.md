@@ -18,13 +18,14 @@ KYNORA WORKS is a creative and technical studio working across four disciplines:
 
 | File | What it is |
 |---|---|
-| `index.html` | Switcher (the site root): flip between every direction (tabs, keys 1–5, `[` `]`) |
+| `index.html` | Switcher (the site root): flip between every direction (tabs, keys 1–6, `[` `]`) |
 | `idea-current.html` | Current homepage |
 | `kynora-home.html` | Current homepage source (body-only fragment) |
 | `ideas.html` | Old address; redirects to the root |
 | `idea-mono.html` | Mono: black-and-white photo hero, giant wordmark, floating menu |
 | `idea-soft.html` | Soft: light, warm gradients, UI cards, pinned services |
 | `idea-editorial.html` | Editorial: serif headline in a typed-glyph burst |
+| `idea-quiet.html` | Quiet: Soft's structure, stripped back. One object in white space, work first, factual copy, founder letter |
 | `idea-wall.html` | Wall: endless WebGL wall you scroll, drag and fling, with a lens bend |
 | `assets/`, `hero-options/` | Photos (Unsplash License) |
 
