@@ -39,6 +39,8 @@ body.sound .pill .bars i:nth-child(2){animation-delay:-.3s}body.sound .pill .bar
 .pill.cta{background:var(--vermilion);border-color:var(--vermilion)}
 .pill.cta:hover{background:#ff5534}
 .hint{left:28px;bottom:max(22px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;font:500 11px/1 var(--f-mono);letter-spacing:.14em;color:rgba(240,236,226,.6);opacity:0;transition:opacity 1s var(--ease) .9s}
+.hint .h-touch{display:none}
+@media (pointer:coarse){.hint .h-fine{display:none}.hint .h-touch{display:inline}}
 .hint .dot{width:22px;height:22px;border-radius:50%;border:1px solid rgba(240,236,226,.35);display:grid;place-items:center}
 .hint .dot::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--vermilion);animation:pulse 1.8s ease-in-out infinite}
 @keyframes pulse{50%{transform:scale(.5);opacity:.6}}
@@ -100,7 +102,7 @@ body.nogl-on .nogl{display:grid}
   <button class="pill hide-s" data-go="contact">Contact</button>
   <button class="pill" id="soundBtn" aria-pressed="false"><span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="hide-s">Sound</span></button>
 </nav>
-<div class="hud hint" aria-hidden="true"><span class="dot"></span><span>DRAG · <span class="hide-s">SCROLL · ARROWS · </span>↵ OPEN</span></div>
+<div class="hud hint" aria-hidden="true"><span class="dot"></span><span class="h-fine">DRAG · <span class="hide-s">SCROLL · ARROWS · </span>↵ OPEN</span><span class="h-touch">SWIPE TO EXPLORE · TAP TO OPEN</span></div>
 <div class="hud coords" aria-hidden="true"><span class="hide-s">LDN <b id="clock">00:00:00</b> ·</span><span>X <b id="cx">+0000</b></span><span>Y <b id="cy">+0000</b></span></div>
 
 <div class="sheet" id="sheet" aria-hidden="true">

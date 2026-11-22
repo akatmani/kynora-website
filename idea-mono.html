@@ -243,7 +243,10 @@ footer h4{font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercas
   .tr-meta .soc{display:none}
   .tr-meta{justify-content:flex-end}
   .deck{display:none}
-  .card{padding:8px 10px;gap:9px}
+  .card{padding:8px 10px;gap:9px;transition:padding .4s var(--ease),border-radius .4s var(--ease)}
+  .tr.scrolled .tr-meta,.tr.scrolled .card small,.tr.scrolled .card .ic{display:none}
+  .tr.scrolled{max-width:none}
+  .tr.scrolled .card{padding:8px 12px 8px 14px;border-radius:99px;font-size:12.5px}
   .card .ic{width:26px;height:26px}
   .card .arr{display:none}
   .hero-notes{left:var(--pad);gap:14vw}
