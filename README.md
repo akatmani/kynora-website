@@ -18,9 +18,10 @@ KYNORA WORKS is a creative and technical studio working across four disciplines:
 
 | File | What it is |
 |---|---|
-| `ideas.html` | Switcher: flip between every direction (tabs, keys 1–5, `[` `]`) |
-| `kynora-home.html` | Current homepage (source; body-only fragment) |
-| `index.html` / `idea-current.html` | Current homepage wrapped as a full document |
+| `index.html` | Switcher (the site root): flip between every direction (tabs, keys 1–5, `[` `]`) |
+| `idea-current.html` | Current homepage |
+| `kynora-home.html` | Current homepage source (body-only fragment) |
+| `ideas.html` | Old address; redirects to the root |
 | `idea-mono.html` | Mono: black-and-white photo hero, giant wordmark, floating menu |
 | `idea-soft.html` | Soft: light, warm gradients, UI cards, pinned services |
 | `idea-editorial.html` | Editorial: serif headline in a typed-glyph burst |
@@ -35,7 +36,7 @@ Every page is a single self-contained HTML file; libraries load from CDNs with p
 python3 .claude/serve.py
 ```
 
-Then open http://localhost:5173/ideas.html (the server sends no-cache headers so edits always show).
+Then open http://localhost:5173/ (the server sends no-cache headers so edits always show).
 
 ## Brand
 

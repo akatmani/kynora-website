@@ -2,105 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KYNORA Homepage Ideas</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@500&display=swap">
-<style>
-:root{--bar:#151311;--paper:#F0ECE2;--faint:rgba(240,236,226,.55);--line:rgba(240,236,226,.12);--verm:#E94627;--ease:cubic-bezier(.22,1,.36,1)}
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bar);color:var(--paper);font-family:"Geist",-apple-system,sans-serif;overflow:hidden}
-.bar{height:44px;display:flex;align-items:center;gap:12px;padding:0 10px 0 14px;border-bottom:1px solid var(--line)}
-.brand{font:500 10.5px/1 "Geist Mono",monospace;letter-spacing:.14em;color:var(--faint);white-space:nowrap}
-.brand b{color:var(--paper);font-weight:500}
-.tabs{display:flex;gap:2px;margin:0 auto;padding:3px;border-radius:99px;background:rgba(240,236,226,.06);position:relative;overflow-x:auto;scrollbar-width:none;max-width:100%}
-.tabs::-webkit-scrollbar{display:none}
-.tab{appearance:none;border:0;background:none;color:var(--faint);font:500 13px/1 "Geist",sans-serif;height:30px;padding:0 13px;border-radius:99px;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap;position:relative;z-index:1;transition:color .3s}
-.tab:hover{color:var(--paper)}
-.tab[aria-selected="true"]{color:#1F1B17}
-.tab kbd{font:500 9.5px/1 "Geist Mono",monospace;opacity:.55;border:1px solid currentColor;border-radius:3px;padding:2px 4px}
-.tab:focus-visible{outline:2px solid var(--verm);outline-offset:1px}
-.pillbg{position:absolute;top:3px;height:30px;border-radius:99px;background:var(--paper);transition:left .45s var(--ease),width .45s var(--ease);z-index:0}
-.tools{display:flex;gap:6px;align-items:center}
-.tools a,.tools button{appearance:none;border:1px solid var(--line);background:none;color:var(--faint);font:500 12px/1 "Geist",sans-serif;height:30px;padding:0 11px;border-radius:99px;cursor:pointer;display:flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
-.tools a:hover,.tools button:hover{color:var(--paper);border-color:rgba(240,236,226,.3)}
-.stage{position:relative;height:calc(100% - 44px)}
-iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;opacity:1;transition:opacity .35s ease}
-iframe.loading{opacity:0}
-.note{position:absolute;left:50%;top:14px;transform:translate(-50%,-8px);opacity:0;background:var(--paper);color:#1F1B17;font:500 12.5px/1 "Geist",sans-serif;padding:10px 14px;border-radius:99px;pointer-events:none;transition:opacity .3s,transform .4s var(--ease);z-index:3;white-space:nowrap}
-.note.show{opacity:1;transform:translate(-50%,0)}
-@media (max-width:760px){
-  .brand,.tools .hide-s,.tab kbd{display:none}
-  .bar{padding:0 6px;gap:6px}
-  .tab{padding:0 10px;font-size:12.5px}
-}
-</style>
+<meta http-equiv="refresh" content="0; url=./">
+<script>location.replace('./' + location.hash);</script>
 </head>
-<body>
-<header class="bar">
-  <div class="brand"><b>KYNORA</b> · HOMEPAGE IDEAS</div>
-  <div class="tabs" role="tablist" aria-label="Homepage ideas" id="tabs"><span class="pillbg" id="pillbg"></span></div>
-  <div class="tools">
-    <button id="prev" class="hide-s" aria-label="Previous idea">←</button>
-    <button id="next" class="hide-s" aria-label="Next idea">→</button>
-    <a id="solo" href="#" target="_blank" rel="noopener">Open alone ↗</a>
-  </div>
-</header>
-<main class="stage">
-  <iframe id="view" title="Homepage idea" allow="clipboard-write; autoplay"></iframe>
-  <div class="note" id="note"></div>
-</main>
-<script>
-(() => {
-  const IDEAS = [
-    { id: 'current', label: 'Current', file: 'idea-current.html', note: 'The current homepage' },
-    { id: 'mono', label: 'Mono', file: 'idea-mono.html', note: 'Photo-led, giant wordmark, floating menu' },
-    { id: 'soft', label: 'Soft', file: 'idea-soft.html', note: 'Light, soft gradients, UI cards' },
-    { id: 'editorial', label: 'Editorial', file: 'idea-editorial.html', note: 'Editorial serif, glyph burst' },
-    { id: 'wall', label: 'Wall', file: 'idea-wall.html', note: 'Endless wall: scroll, drag, fling' },
-  ];
-  const tabs = document.getElementById('tabs'), pill = document.getElementById('pillbg'), view = document.getElementById('view'), note = document.getElementById('note'), solo = document.getElementById('solo');
-  IDEAS.forEach((d, i) => {
-    const b = document.createElement('button'); b.className = 'tab'; b.role = 'tab'; b.id = 't-' + d.id;
-    b.innerHTML = `${d.label}<kbd>${i + 1}</kbd>`; b.addEventListener('click', () => show(i)); tabs.appendChild(b);
-  });
-  let cur = -1, nt;
-  const place = () => { const b = tabs.children[cur + 1]; if (!b) return; pill.style.left = b.offsetLeft + 'px'; pill.style.width = b.offsetWidth + 'px'; };
-  const show = (i, quiet) => {
-    i = (i + IDEAS.length) % IDEAS.length; if (i === cur) return; cur = i;
-    const d = IDEAS[i];
-    [...tabs.querySelectorAll('.tab')].forEach((b, j) => b.setAttribute('aria-selected', j === i));
-    place(); tabs.children[i + 1].scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    view.classList.add('loading');
-    setTimeout(() => { view.src = d.file; }, 120);
-    solo.href = d.file;
-    history.replaceState(null, '', '#' + d.id);
-    try { localStorage.setItem('kynora-idea', d.id); } catch (e) {}
-    if (!quiet) { note.textContent = `${i + 1} · ${d.label} — ${d.note}`; note.classList.add('show'); clearTimeout(nt); nt = setTimeout(() => note.classList.remove('show'), 1800); }
-  };
-  // number keys and [ ] switch ideas, from the bar or from inside the page
-  const onKey = e => {
-    const t = e.target; if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const n = parseInt(e.key, 10);
-    if (n >= 1 && n <= IDEAS.length) { show(n - 1); e.preventDefault(); }
-    else if (e.key === ']') show(cur + 1); else if (e.key === '[') show(cur - 1);
-  };
-  addEventListener('keydown', onKey);
-  view.addEventListener('load', () => {
-    view.classList.remove('loading');
-    try { view.contentWindow.addEventListener('keydown', onKey); } catch (e) {}
-    try { view.contentWindow.focus(); } catch (e) {}
-  });
-  document.getElementById('prev').addEventListener('click', () => show(cur - 1));
-  document.getElementById('next').addEventListener('click', () => show(cur + 1));
-  addEventListener('resize', place);
-  let start = IDEAS.findIndex(d => '#' + d.id === location.hash);
-  if (start < 0) { try { start = IDEAS.findIndex(d => d.id === localStorage.getItem('kynora-idea')); } catch (e) {} }
-  document.fonts && document.fonts.ready.then(place);
-  show(start < 0 ? 0 : start, true);
-})();
-</script>
+<body style="background:#151311;color:#F0ECE2;font-family:system-ui,sans-serif">
+<p>The switcher has moved to <a href="./" style="color:#E94627">the home page</a>.</p>
 </body>
 </html>
